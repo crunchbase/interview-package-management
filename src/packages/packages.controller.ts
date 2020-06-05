@@ -5,118 +5,115 @@ import {
   NotFoundException,
   Post,
   Body,
+  BadRequestException,
   Headers,
+  UnauthorizedException,
+  Patch,
 } from '@nestjs/common';
-import { packages, locations } from './data';
+import { Package, LocationStatus, LocationStatusEnum } from './types';
+import { packagesData, locationsData } from './data';
+import { CreatePackageDto } from './dto/create-package.dto';
+import { UpdatePackageLocationDto } from './dto/update-package-location.dto';
 
 @Controller('packages')
 export class PackagesController {
   @Get(':id')
-  findById(@Param() params): any {
-    console.log(`INFO: GET ${params.id} ===== START`);
+  findById(@Param() params): Package {
+    const p: Package = packagesData.find(p => p.id === parseInt(params.id, 10));
 
-    const p = packages.find(p => {
-      return p.id === parseInt(params.id, 10);
-    });
-
-    if (!p) {
-      console.log("ERROR: GET ${params.id}/locations -- package not found");
-      console.log(`INFO: GET ${params.id} ===== END`);
-      throw new NotFoundException("Package not found");
+    if (p) {
+      return p;
     }
 
-    console.log(`INFO: GET ${params.id} -- package found`, p);
-
-    console.log(`INFO: GET ${params.id} ===== END`);
-
-    return p;
+    throw new NotFoundException('package with id was not found');
   }
 
   @Post()
-  create(@Body() packageData: any, @Headers() headers: Headers): any {
-    console.log(`INFO: POST / ===== START`);
-
+  create(
+    @Body() createPackageDto: CreatePackageDto,
+    @Headers() headers: Headers,
+  ): Package {
     if (!headers['x-is-internal']) {
-      console.log(`ERROR: POST / -- called without proper headers`)
+      throw new UnauthorizedException();
     }
 
-    const p = {
-      id: packages.length,
-      ...packageData,
+    if (
+      createPackageDto.height === undefined ||
+      createPackageDto.width === undefined ||
+      createPackageDto.length === undefined
+    ) {
+      throw new BadRequestException('package missing required dimensions');
+    }
+
+    const originLocation = locationsData.find(location => {
+      return location.id === createPackageDto.originLocationId;
+    });
+
+    if (!originLocation) {
+      throw new BadRequestException('orgin location not found');
+    }
+
+    const locationStatus: LocationStatus = {
+      locationId: createPackageDto.originLocationId,
+      status: LocationStatusEnum.SCANNED,
     };
 
-    console.log(`INFO: POST / -- package created`, p);
+    const p = {
+      id: packagesData.length,
+      dimensions: {
+        height: createPackageDto.height,
+        width: createPackageDto.width,
+        length: createPackageDto.length,
+      },
+      locationStatuses: [locationStatus],
+    };
 
-    packages.push(p);
-
-    console.log(`INFO: POST / -- packages list`, packages);
-
-    console.log(`INFO: POST / ===== END`);
+    packagesData.push(p);
 
     return p;
   }
 
-  @Post(':id/locations')
-  createLocation(
+  @Patch(':id/locationStatues')
+  addLocation(
     @Param() params,
-    @Body() locationData: any,
-  ): any {
-    console.log(`INFO: POST ${params.id}/locations ===== START`);
+    @Body() updatePackageLocationDto: UpdatePackageLocationDto,
+    @Headers() headers: Headers,
+  ): Package {
+    if (!headers['x-is-internal']) {
+      throw new UnauthorizedException();
+    }
 
-    const p = packages.find(p => {
+    if (
+      updatePackageLocationDto.locationId === undefined ||
+      params.id === undefined ||
+      updatePackageLocationDto.status === undefined
+    ) {
+      throw new BadRequestException('missing required properties');
+    }
+
+    const location = locationsData.find(location => {
+      return location.id === updatePackageLocationDto.locationId;
+    });
+
+    if (!location) {
+      throw new BadRequestException('location id is invalid');
+    }
+
+    const p = packagesData.find(p => {
       return p.id === parseInt(params.id, 10);
     });
 
     if (!p) {
-      console.log(`ERROR: POST ${params.id}/locations -- package not found`);
-      console.log(`INFO: POST ${params.id}/locations ===== END`);
-      throw new NotFoundException("Package not found");
+      throw new BadRequestException('package id is invalid');
     }
 
-    console.log(`INFO: POST ${params.id}/locations -- package found`, p);
-
-    const location = {
-      id: locations.length,
-      packageId: p.id,
-      ...locationData,
+    const locationStatus: LocationStatus = {
+      locationId: location.id,
+      status: updatePackageLocationDto.status,
     };
 
-    console.log(`INFO: POST ${params.id}/locations -- location created`, location);
+    p.locationStatuses.push(locationStatus);
 
-    locations.push(location);
-
-    console.log(`INFO: POST ${params.id}/locations -- locations list`, locations);
-
-    console.log(`INFO: POST ${params.id}/locations ===== END`);
-
-    return location;
-  }
-
-  @Get(':id/locations')
-  getLocations(@Param() params, @Headers() headers: Headers): any {
-    console.log(`INFO: GET ${params.id}/locations ===== START`);
-
-    if (!headers['x-is-internal']) {
-      console.log(`ERROR: GET ${params.id}/locations -- called without proper headers`)
-    }
-
-    const p = packages.find(p => {
-      return p.id === parseInt(params.id, 10);
-    });
-
-    if (!p) {
-      console.log("INFO: GET ${params.id}/locations -- package not found");
-      console.log(`INFO: GET ${params.id}/locations ===== END`);
-      throw new NotFoundException("Package not found");
-    }
-
-    console.log(`INFO: GET ${params.id}/locations -- package found`, p);
-
-    const l = locations.filter(l => l.packageId === p.id);
-    console.log(`INFO: GET ${params.id}/locations -- locations`, l);
-
-    console.log(`INFO: GET ${params.id}/locations ===== END`);
-
-    return l;
+    return p;
   }
 }
