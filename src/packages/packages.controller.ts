@@ -83,7 +83,7 @@ export class PackagesController {
 
     let locationStatus: LocationStatus;
     try {
-      locationStatus = this.locationStatusService.create(pack, createLocationStatus);
+      locationStatus = this.locationStatusService.create(packageId, createLocationStatus);
     } catch (e) {
       console.log("Create location status error", e);
       throw new BadRequestException(`Location status missing required fields`);
