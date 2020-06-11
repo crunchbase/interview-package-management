@@ -8,112 +8,87 @@ import {
   BadRequestException,
   Headers,
   UnauthorizedException,
-  Patch,
 } from '@nestjs/common';
-import { Package, LocationStatus, LocationStatusEnum } from './types';
-import { packagesData, locationsData } from './data';
-import { CreatePackageDto } from './dto/create-package.dto';
-import { UpdatePackageLocationDto } from './dto/update-package-location.dto';
+import { CreatePackage, Package, PackageService } from './package.service';
+import {
+  CreateLocationStatus,
+  LocationStatus,
+  LocationStatusService,
+} from './location-status.service';
 
 @Controller('packages')
 export class PackagesController {
-  @Get(':id')
-  findById(@Param() params): Package {
-    const p: Package = packagesData.find(p => p.id === parseInt(params.id, 10));
+  constructor(
+    private packageService: PackageService,
+    private locationStatusService: LocationStatusService,
+  ) {}
 
-    if (p) {
-      return p;
+  @Get(':id')
+  getPackage(@Param() params): Package {
+    const id: Package["id"] = parseInt(params.id, 10);
+    if (isNaN(id)) {
+      throw new BadRequestException('Package id malformed');
     }
 
-    throw new NotFoundException('package with id was not found');
+    const p = this.packageService.get(id);
+
+    if (!p) {
+      throw new NotFoundException(`Package with id ${ id } was not found`);
+    }
+
+    return p;
   }
 
   @Post()
-  create(
-    @Body() createPackageDto: CreatePackageDto,
+  createPackage(
+    @Body() createPackage: CreatePackage,
     @Headers() headers: Headers,
   ): Package {
     if (!headers['x-is-internal']) {
       throw new UnauthorizedException();
     }
 
-    if (
-      createPackageDto.height === undefined ||
-      createPackageDto.width === undefined ||
-      createPackageDto.length === undefined
-    ) {
-      throw new BadRequestException('package missing required dimensions');
+    // 'pack' here because 'package' is a reserved word
+    let pack: Package;
+    try {
+      pack = this.packageService.create(createPackage);
+    } catch (e) {
+      console.log("Create package error", e);
+      throw new BadRequestException('Package missing required fields');
     }
 
-    const originLocation = locationsData.find(location => {
-      return location.id === createPackageDto.originLocationId;
-    });
-
-    if (!originLocation) {
-      throw new BadRequestException('orgin location not found');
-    }
-
-    const locationStatus: LocationStatus = {
-      locationId: createPackageDto.originLocationId,
-      status: LocationStatusEnum.SCANNED,
-    };
-
-    const p = {
-      id: packagesData.length,
-      dimensions: {
-        height: createPackageDto.height,
-        width: createPackageDto.width,
-        length: createPackageDto.length,
-      },
-      locationStatuses: [locationStatus],
-    };
-
-    packagesData.push(p);
-
-    return p;
+    return pack;
   }
 
-  @Patch(':id/locationStatues')
-  addLocation(
-    @Param() params,
-    @Body() updatePackageLocationDto: UpdatePackageLocationDto,
+  @Post(':id/locationStatuses')
+  createLocationStatus(
+    @Body() createLocationStatus: CreateLocationStatus,
     @Headers() headers: Headers,
-  ): Package {
+    @Param() params
+  ): LocationStatus {
     if (!headers['x-is-internal']) {
       throw new UnauthorizedException();
     }
 
-    if (
-      updatePackageLocationDto.locationId === undefined ||
-      params.id === undefined ||
-      updatePackageLocationDto.status === undefined
-    ) {
-      throw new BadRequestException('missing required properties');
+    const packageId: Package["id"] = parseInt(params.id, 10);
+    if (isNaN(packageId)) {
+      throw new BadRequestException('Package id malformed');
     }
 
-    const location = locationsData.find(location => {
-      return location.id === updatePackageLocationDto.locationId;
-    });
+    const pack = this.packageService.get(packageId);
 
-    if (!location) {
-      throw new BadRequestException('location id is invalid');
+    if (!pack) {
+      throw new NotFoundException(`Package with id ${ packageId } was not found`);
     }
 
-    const p = packagesData.find(p => {
-      return p.id === parseInt(params.id, 10);
-    });
-
-    if (!p) {
-      throw new BadRequestException('package id is invalid');
+    let locationStatus: LocationStatus;
+    try {
+      locationStatus = this.locationStatusService.create(pack, createLocationStatus);
+    } catch (e) {
+      console.log("Create location status error", e);
+      throw new BadRequestException(`Location status missing required fields`);
     }
 
-    const locationStatus: LocationStatus = {
-      locationId: location.id,
-      status: updatePackageLocationDto.status,
-    };
-
-    p.locationStatuses.push(locationStatus);
-
-    return p;
+    return locationStatus;
   }
 }
