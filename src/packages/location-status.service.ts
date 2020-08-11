@@ -37,8 +37,12 @@ const locationStatuses: LocationStatus[] = [
 export class LocationStatusService {
   constructor(private packageService: PackageService, private locationService: LocationService) {}
 
-  public get(id: number) {
+  public get(id: number): LocationStatus | undefined {
     return locationStatuses.find(status => status.id === id);
+  }
+
+  public getAllStatusesForPackage(packageId: Package["id"]): LocationStatus[] {
+    return locationStatuses.filter(status => status.packageId === packageId);
   }
 
   public create(packageId: Package["id"], createLocationStatus: CreateLocationStatus): LocationStatus {

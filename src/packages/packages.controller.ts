@@ -15,16 +15,24 @@ import {
   LocationStatus,
   LocationStatusService,
 } from './location-status.service';
+import { LocationService, Location } from './location.service';
+
+interface PackageModel {
+  package: Package;
+  locationStatuses: LocationStatus[];
+  locations: Location[];
+}
 
 @Controller('packages')
 export class PackagesController {
   constructor(
     private packageService: PackageService,
     private locationStatusService: LocationStatusService,
+    private locationService: LocationService
   ) {}
 
   @Get(':id')
-  getPackage(@Param() params): Package {
+  getPackage(@Param() params): PackageModel {
     const id: Package["id"] = parseInt(params.id, 10);
     if (isNaN(id)) {
       throw new BadRequestException('Package id malformed');
@@ -36,7 +44,14 @@ export class PackagesController {
       throw new NotFoundException(`Package with id ${ id } was not found`);
     }
 
-    return p;
+    const locationStatuses = this.locationStatusService.getAllStatusesForPackage(p.id);
+    const locations = this.locationService.getAllForLocationsForStatuses(locationStatuses);
+
+    return {
+      package: p,
+      locationStatuses,
+      locations 
+    };
   }
 
   @Post()
