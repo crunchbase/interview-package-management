@@ -1,15 +1,5 @@
 import { Injectable } from '@nestjs/common';
-
-export interface CreatePackage {
-  weight?: number; // in kg
-  height?: number; // in cm
-  width?: number; // in cm
-  length?: number; // in cm
-}
-
-export interface Package extends CreatePackage {
-  id: number;
-}
+import { CreatePackageDto, Package } from './types.dto';
 
 const packages: Package[] = [
   {
@@ -41,8 +31,10 @@ export class PackageService {
     return packages.find(p => p.id === id);
   }
 
-  public create(createPackage: CreatePackage): Package {
-    const { weight, height, width, length } = createPackage;
+  public create(createPackageDto: CreatePackageDto): Package {
+    console.log(createPackageDto);
+
+    const { weight, height, width, length } = createPackageDto;
     if (!weight) {
       throw Error("Package missing required field 'weight'");
     }

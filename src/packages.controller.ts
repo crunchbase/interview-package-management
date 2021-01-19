@@ -9,31 +9,27 @@ import {
   Headers,
   UnauthorizedException,
 } from '@nestjs/common';
-import { CreatePackage, Package, PackageService } from './package.service';
+import { PackageService } from './package.service';
+import { LocationStatusService } from './location-status.service';
 import {
-  CreateLocationStatus,
+  CreateLocationStatusDto,
+  CreatePackageDto,
   LocationStatus,
-  LocationStatusService,
-} from './location-status.service';
-import { LocationService, Location } from './location.service';
-
-interface PackageModel {
-  package: Package;
-  locationStatuses: LocationStatus[];
-  locations: Location[];
-}
+  Package,
+  PackageWithTracking,
+} from './types.dto';
+import { ApiHeader } from '@nestjs/swagger';
 
 @Controller('packages')
 export class PackagesController {
   constructor(
     private packageService: PackageService,
     private locationStatusService: LocationStatusService,
-    private locationService: LocationService
   ) {}
 
   @Get(':id')
-  getPackage(@Param() params): PackageModel {
-    const id: Package["id"] = parseInt(params.id, 10);
+  getPackage(@Param() params): PackageWithTracking {
+    const id: Package['id'] = parseInt(params.id, 10);
     if (isNaN(id)) {
       throw new BadRequestException('Package id malformed');
     }
@@ -41,51 +37,59 @@ export class PackagesController {
     const p = this.packageService.get(id);
 
     if (!p) {
-      throw new NotFoundException(`Package with id ${ id } was not found`);
+      throw new NotFoundException(`Package with id ${id} was not found`);
     }
 
-    const locationStatuses = this.locationStatusService.getAllStatusesForPackage(p.id);
-    const locations = this.locationService.getAllForLocationsForStatuses(locationStatuses);
+    const locationStatuses = this.locationStatusService.getAllStatusesForPackage(
+      p.id,
+    );
 
     return {
       package: p,
       locationStatuses,
-      locations 
     };
   }
 
+  @ApiHeader({
+    name: 'X-Is-Employee',
+    description: 'Internal shipping employee header',
+  })
   @Post()
   createPackage(
-    @Body() createPackage: CreatePackage,
+    @Body() createPackageDto: CreatePackageDto,
     @Headers() headers: Headers,
   ): Package {
-    if (!headers['x-is-internal']) {
+    if (!headers['x-is-employee']) {
       throw new UnauthorizedException();
     }
 
     // 'pack' here because 'package' is a reserved word
     let pack: Package;
     try {
-      pack = this.packageService.create(createPackage);
+      pack = this.packageService.create(createPackageDto);
     } catch (e) {
-      console.log("Create package error", e);
+      console.log('Create package error', e);
       throw new BadRequestException('Package missing required fields');
     }
 
     return pack;
   }
 
+  @ApiHeader({
+    name: 'X-Is-Employee',
+    description: 'Internal shipping employee header',
+  })
   @Post(':id/locationStatuses')
   createLocationStatus(
-    @Body() createLocationStatus: CreateLocationStatus,
+    @Body() createLocationStatusDto: CreateLocationStatusDto,
     @Headers() headers: Headers,
-    @Param() params
+    @Param() params,
   ): LocationStatus {
-    if (!headers['x-is-internal']) {
+    if (!headers['x-is-employee']) {
       throw new UnauthorizedException();
     }
 
-    const packageId: Package["id"] = parseInt(params.id, 10);
+    const packageId: Package['id'] = parseInt(params.id, 10);
     if (isNaN(packageId)) {
       throw new BadRequestException('Package id malformed');
     }
@@ -93,14 +97,17 @@ export class PackagesController {
     const pack = this.packageService.get(packageId);
 
     if (!pack) {
-      throw new NotFoundException(`Package with id ${ packageId } was not found`);
+      throw new NotFoundException(`Package with id ${packageId} was not found`);
     }
 
     let locationStatus: LocationStatus;
     try {
-      locationStatus = this.locationStatusService.create(packageId, createLocationStatus);
+      locationStatus = this.locationStatusService.create(
+        packageId,
+        createLocationStatusDto,
+      );
     } catch (e) {
-      console.log("Create location status error", e);
+      console.log('Create location status error', e);
       throw new BadRequestException(`Location status missing required fields`);
     }
 
