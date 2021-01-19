@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { PackageService } from './package.service';
 import {
   CreateLocationStatusDto,
   LocationStatus,
@@ -34,13 +33,13 @@ const storedLocationStatuses: StoredLocationStatus[] = [
     status: LocationStatusEnum.ARRIVED,
   },
   {
-    id:3,
+    id: 3,
     packageId: 1,
     address: '123 Shipping Hub Way, Oakland CA, 12345',
     status: LocationStatusEnum.DEPARTED,
   },
   {
-    id:4,
+    id: 4,
     packageId: 2,
     address: '123 Shipping Hub Way, Oakland CA, 12345',
     status: LocationStatusEnum.DEPARTED,
@@ -49,16 +48,34 @@ const storedLocationStatuses: StoredLocationStatus[] = [
 
 @Injectable()
 export class LocationStatusService {
-  constructor(private packageService: PackageService) {}
-
   public get(id: number): LocationStatus | undefined {
-    return storedLocationStatuses.find(status => status.id === id);
+    const storedLocationStatus = storedLocationStatuses.find(
+      status => status.id === id,
+    );
+
+    if (!storedLocationStatus) {
+      return undefined;
+    }
+
+    const { id: locationStatusId, address, status } = storedLocationStatus;
+    return {
+      id: locationStatusId,
+      address,
+      status,
+    };
   }
 
   public getAllStatusesForPackage(packageId: Package['id']): LocationStatus[] {
-    return storedLocationStatuses.filter(
-      status => status.packageId === packageId,
-    );
+    return storedLocationStatuses
+      .filter(status => status.packageId === packageId)
+      .map(storedLocationStatus => {
+        const { id, address, status } = storedLocationStatus;
+        return {
+          id,
+          address,
+          status,
+        };
+      });
   }
 
   public create(
