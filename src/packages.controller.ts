@@ -5,6 +5,7 @@ import {
   NotFoundException,
   Post,
   Body,
+  ParseIntPipe,
   BadRequestException,
   UnauthorizedException,
   Headers,
@@ -28,13 +29,7 @@ export class PackagesController {
   ) {}
 
   @Get(':id')
-  getPackage(@Param() params): PackageWithTracking {
-    const id: Package['id'] = parseInt(params.id, 10);
-    if (isNaN(id)) {
-      console.log(`ERROR [GET /packages/:id] - Package id malformed`, id);
-      throw new BadRequestException(`Package id malformed`);
-    }
-
+  getPackage(@Param('id', ParseIntPipe) id: number): PackageWithTracking {
     const p = this.packageService.get(id);
 
     if (!p) {
@@ -93,19 +88,11 @@ export class PackagesController {
   createLocationStatus(
     @Body() createLocationStatusDto: CreateLocationStatusDto,
     @Headers() headers: Headers,
-    @Param() params,
+    @Param('id', ParseIntPipe) packageId: number,
   ): LocationStatus {
     if (!headers['x-is-employee']) {
       console.log('ERROR [POST /packages/:id/locationStatuses] - Unauthorized');
       throw new UnauthorizedException();
-    }
-
-    const packageId: Package['id'] = parseInt(params.id, 10);
-    if (isNaN(packageId)) {
-      console.log(
-        'ERROR [POST /packages/:id/locationStatuses] - Package id malformed',
-      );
-      throw new BadRequestException('Package id malformed');
     }
 
     const pack = this.packageService.get(packageId);
