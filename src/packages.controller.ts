@@ -6,8 +6,8 @@ import {
   Post,
   Body,
   BadRequestException,
-  Headers,
   UnauthorizedException,
+  Headers,
 } from '@nestjs/common';
 import { PackageService } from './package.service';
 import { LocationStatusService } from './location-status.service';
@@ -31,12 +31,16 @@ export class PackagesController {
   getPackage(@Param() params): PackageWithTracking {
     const id: Package['id'] = parseInt(params.id, 10);
     if (isNaN(id)) {
-      throw new BadRequestException('Package id malformed');
+      console.log(`ERROR [GET /packages/:id] - Package id malformed`, id);
+      throw new BadRequestException(`Package id malformed`);
     }
 
     const p = this.packageService.get(id);
 
     if (!p) {
+      console.log(
+        `ERROR [GET /packages/:id] - Package with id ${id} was not found`,
+      );
       throw new NotFoundException(`Package with id ${id} was not found`);
     }
 
@@ -44,10 +48,14 @@ export class PackagesController {
       p.id,
     );
 
-    return {
+    const pack = {
       package: p,
       locationStatuses,
     };
+
+    console.log('[GET /packages/:id] - Package found', pack);
+
+    return pack;
   }
 
   @ApiHeader({
@@ -56,21 +64,23 @@ export class PackagesController {
   })
   @Post()
   createPackage(
-    @Body() createPackageDto: CreatePackageDto,
     @Headers() headers: Headers,
+    @Body() createPackageDto: CreatePackageDto,
   ): Package {
     if (!headers['x-is-employee']) {
+      console.log('ERROR [POST /packages/] - Unauthorized');
       throw new UnauthorizedException();
     }
 
-    // 'pack' here because 'package' is a reserved word
     let pack: Package;
     try {
       pack = this.packageService.create(createPackageDto);
     } catch (e) {
-      console.log('Create package error', e);
+      console.log('ERROR [POST /packages/] - Create package error', e);
       throw new BadRequestException('Package missing required fields');
     }
+
+    console.log('[POST /packages/] - Package created', pack);
 
     return pack;
   }
@@ -86,17 +96,24 @@ export class PackagesController {
     @Param() params,
   ): LocationStatus {
     if (!headers['x-is-employee']) {
+      console.log('ERROR [POST /packages/:id/locationStatuses] - Unauthorized');
       throw new UnauthorizedException();
     }
 
     const packageId: Package['id'] = parseInt(params.id, 10);
     if (isNaN(packageId)) {
+      console.log(
+        'ERROR [POST /packages/:id/locationStatuses] - Package id malformed',
+      );
       throw new BadRequestException('Package id malformed');
     }
 
     const pack = this.packageService.get(packageId);
 
     if (!pack) {
+      console.log(
+        `ERROR [POST /packages/:id/locationStatuses] - Package with id ${packageId} not found`,
+      );
       throw new NotFoundException(`Package with id ${packageId} was not found`);
     }
 
@@ -107,9 +124,14 @@ export class PackagesController {
         createLocationStatusDto,
       );
     } catch (e) {
-      console.log('Create location status error', e);
+      console.log('ERROR [POST /packages/:id/locationStatuses] - Create location status error', e);
       throw new BadRequestException(`Location status missing required fields`);
     }
+
+    console.log(
+      '[POST /packages/:id/locationStatuses] - Package location updated',
+      locationStatus,
+    );
 
     return locationStatus;
   }

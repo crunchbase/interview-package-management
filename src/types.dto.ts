@@ -1,23 +1,21 @@
 // Package
 export class Package {
   id: number;
+  origin: string;
+  destination: string;
   weight: number; // in kg
-  height: number; // in cm
-  width: number; // in cm
-  length: number; // in cm
 }
 
 export class CreatePackageDto {
-  weight: Package['weight']; // in kg
-  height: Package['height']; // in cm
-  width: Package['width']; // in cm
-  length: Package['length']; // in cm
+  origin: Package['origin'];
+  destination: Package['destination'];
+  weight: Package['weight'];
 }
 
 // Location status
 export enum LocationStatusEnum {
   ARRIVED = 'arrived',
-  DEPARTED = 'departed'
+  DEPARTED = 'departed',
 }
 
 export class LocationStatus {

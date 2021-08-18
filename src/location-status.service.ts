@@ -17,56 +17,27 @@ const storedLocationStatuses: StoredLocationStatus[] = [
   {
     id: 0,
     packageId: 0,
-    address: '456 Shipping Drop-off Road, San Francisco CA, 98765',
+    address: '1 Package Dropoff Way, Oakland, CA, 11111',
     status: LocationStatusEnum.ARRIVED,
   },
   {
     id: 1,
     packageId: 0,
-    address: '123 Shipping Hub Way, Oakland CA, 12345',
+    address: '1 Package Dropoff Way, Oakland, CA, 11111',
     status: LocationStatusEnum.DEPARTED,
   },
   {
     id: 2,
     packageId: 0,
-    address: '123 Shipping Hub Way, Oakland CA, 12345',
+    address: '4 Midway Street, Columbus, OH, 44444',
     status: LocationStatusEnum.ARRIVED,
-  },
-  {
-    id: 3,
-    packageId: 1,
-    address: '123 Shipping Hub Way, Oakland CA, 12345',
-    status: LocationStatusEnum.DEPARTED,
-  },
-  {
-    id: 4,
-    packageId: 2,
-    address: '123 Shipping Hub Way, Oakland CA, 12345',
-    status: LocationStatusEnum.DEPARTED,
   },
 ];
 
 @Injectable()
 export class LocationStatusService {
-  public get(id: number): LocationStatus | undefined {
-    const storedLocationStatus = storedLocationStatuses.find(
-      status => status.id === id,
-    );
-
-    if (!storedLocationStatus) {
-      return undefined;
-    }
-
-    const { id: locationStatusId, address, status } = storedLocationStatus;
-    return {
-      id: locationStatusId,
-      address,
-      status,
-    };
-  }
-
   public getAllStatusesForPackage(packageId: Package['id']): LocationStatus[] {
-    return storedLocationStatuses
+    const statusesForPackages = storedLocationStatuses
       .filter(status => status.packageId === packageId)
       .map(storedLocationStatus => {
         const { id, address, status } = storedLocationStatus;
@@ -76,6 +47,8 @@ export class LocationStatusService {
           status,
         };
       });
+
+    return statusesForPackages;
   }
 
   public create(
@@ -85,27 +58,26 @@ export class LocationStatusService {
     const { address, status } = createLocationStatusDto;
 
     if (!address) {
-      throw Error("Location status missing required field 'address'");
+      throw Error(
+        "Location status missing required field 'address'",
+      );
     }
 
     if (!status) {
-      throw Error("Location status missing required field 'status'");
+      throw Error(
+        "Location status missing required field 'status'",
+      );
     }
 
     const id = storedLocationStatuses.length;
-    const locationStatus: StoredLocationStatus = {
-      id,
-      packageId,
-      address,
-      status,
-    };
-
-    storedLocationStatuses.push(locationStatus);
-
-    return {
+    const locationStatus = {
       id,
       address,
       status,
     };
+
+    storedLocationStatuses.push({ ...locationStatus, packageId });
+
+    return locationStatus;
   }
 }
