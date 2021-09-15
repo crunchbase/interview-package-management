@@ -24,7 +24,11 @@ const packages: Package[] = [
 
 @Injectable()
 export class PackageService {
-  public get(id: number): Package {
+  public getAll(): Package[] {
+    return packages;
+  }
+
+  public getById(id: number): Package {
     return packages.find(p => p.id === id);
   }
 

@@ -29,8 +29,8 @@ export class PackagesController {
   ) {}
 
   @Get(':id')
-  getPackage(@Param('id', ParseIntPipe) id: number): PackageWithTracking {
-    const p = this.packageService.get(id);
+  getPackageById(@Param('id', ParseIntPipe) id: number): PackageWithTracking {
+    const p = this.packageService.getById(id);
 
     if (!p) {
       console.log(
@@ -51,6 +51,32 @@ export class PackagesController {
     console.log('[GET /packages/:id] - Package found', pack);
 
     return pack;
+  }
+
+  @ApiHeader({
+    name: 'X-Is-Employee',
+    description: 'Internal shipping employee header',
+  })
+  @Get()
+  getPackages(@Headers() headers: Headers): PackageWithTracking[] {
+    if (!headers['x-is-employee']) {
+      console.log('ERROR [POST /packages/] - Unauthorized');
+      throw new UnauthorizedException();
+    }
+
+    const packagesWithTracking = this.packageService.getAll().map(p => {
+      const locationStatuses = this.locationStatusService.getAllStatusesForPackage(
+        p.id,
+      );
+
+      return { package: p, locationStatuses };
+    });
+
+    console.log(
+      `[GET /packages] - ${packagesWithTracking.length} Packages found`,
+    );
+
+    return packagesWithTracking;
   }
 
   @ApiHeader({
@@ -95,7 +121,7 @@ export class PackagesController {
       throw new UnauthorizedException();
     }
 
-    const pack = this.packageService.get(packageId);
+    const pack = this.packageService.getById(packageId);
 
     if (!pack) {
       console.log(
@@ -111,7 +137,10 @@ export class PackagesController {
         createLocationStatusDto,
       );
     } catch (e) {
-      console.log('ERROR [POST /packages/:id/locationStatuses] - Create location status error', e);
+      console.log(
+        'ERROR [POST /packages/:id/locationStatuses] - Create location status error',
+        e,
+      );
       throw new BadRequestException(`Location status missing required fields`);
     }
 
