@@ -3,19 +3,19 @@ import { CreatePackageDto, Package } from './types.dto';
 
 const packages: Package[] = [
   {
-    id: 0,
+    id: 123,
     origin: '1 Package Dropoff Way, Oakland, CA, 11111',
     destination: "9 Cool Friend's House, New York City, NY, 99999",
     weight: 20,
   },
   {
-    id: 1,
+    id: 456,
     origin: "9 Cool Friend's House, New York City, NY, 99999",
     destination: 'PO BOX 9, New York City, NY, 99999',
     weight: 1.5,
   },
   {
-    id: 2,
+    id: 789,
     origin: '2 Cookie Factory Lane, Houston, TX, 22222',
     destination: '5 My House Road, Oakland, CA, 55555',
     weight: 5,

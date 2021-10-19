@@ -15,20 +15,20 @@ export class StoredLocationStatus {
 
 const storedLocationStatuses: StoredLocationStatus[] = [
   {
-    id: 0,
-    packageId: 0,
+    id: 1011,
+    packageId: 456,
     address: '1 Package Dropoff Way, Oakland, CA, 11111',
     status: LocationStatusEnum.ARRIVED,
   },
   {
-    id: 1,
-    packageId: 0,
+    id: 1213,
+    packageId: 456,
     address: '1 Package Dropoff Way, Oakland, CA, 11111',
     status: LocationStatusEnum.DEPARTED,
   },
   {
-    id: 2,
-    packageId: 0,
+    id: 1415,
+    packageId: 456,
     address: '4 Midway Street, Columbus, OH, 44444',
     status: LocationStatusEnum.ARRIVED,
   },

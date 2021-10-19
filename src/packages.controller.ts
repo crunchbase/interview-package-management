@@ -17,7 +17,6 @@ import {
   CreatePackageDto,
   LocationStatus,
   Package,
-  PackageWithTracking,
 } from './types.dto';
 import { ApiHeader } from '@nestjs/swagger';
 
@@ -29,7 +28,7 @@ export class PackagesController {
   ) {}
 
   @Get(':id')
-  getPackageById(@Param('id', ParseIntPipe) id: number): PackageWithTracking {
+  getPackageById(@Param('id', ParseIntPipe) id: number): Package {
     const p = this.packageService.getById(id);
 
     if (!p) {
@@ -39,18 +38,9 @@ export class PackagesController {
       throw new NotFoundException(`Package with id ${id} was not found`);
     }
 
-    const locationStatuses = this.locationStatusService.getAllStatusesForPackage(
-      p.id,
-    );
+    console.log('[GET /packages/:id] - Package found', p);
 
-    const pack = {
-      package: p,
-      locationStatuses,
-    };
-
-    console.log('[GET /packages/:id] - Package found', pack);
-
-    return pack;
+    return p;
   }
 
   @ApiHeader({
@@ -58,25 +48,20 @@ export class PackagesController {
     description: 'Internal shipping employee header',
   })
   @Get()
-  getPackages(@Headers() headers: Headers): PackageWithTracking[] {
+  getPackages(@Headers() headers: Headers): Package[] {
     if (!headers['x-is-employee']) {
       console.log('ERROR [POST /packages/] - Unauthorized');
       throw new UnauthorizedException();
     }
 
-    const packagesWithTracking = this.packageService.getAll().map(p => {
-      const locationStatuses = this.locationStatusService.getAllStatusesForPackage(
-        p.id,
-      );
-
-      return { package: p, locationStatuses };
-    });
+    const packages = this.packageService.getAll();
 
     console.log(
-      `[GET /packages] - ${packagesWithTracking.length} Packages found`,
+      `[GET /packages] - ${packages.length} Packages found`,
+      packages,
     );
 
-    return packagesWithTracking;
+    return packages;
   }
 
   @ApiHeader({
@@ -104,6 +89,41 @@ export class PackagesController {
     console.log('[POST /packages/] - Package created', pack);
 
     return pack;
+  }
+
+  @ApiHeader({
+    name: 'X-Is-Employee',
+    description: 'Internal shipping employee header',
+  })
+  @Get(':id/locationStatuses')
+  getLocationStatuses(
+    @Headers() headers: Headers,
+    @Param('id', ParseIntPipe) packageId: number,
+  ): LocationStatus[] {
+    if (!headers['x-is-employee']) {
+      console.log('ERROR [GET /packages/:id/locationStatuses] - Unauthorized');
+      throw new UnauthorizedException();
+    }
+
+    const pack = this.packageService.getById(packageId);
+
+    if (!pack) {
+      console.log(
+        `ERROR [GET /packages/:id/locationStatuses] - Package with id ${packageId} not found`,
+      );
+      throw new NotFoundException(`Package with id ${packageId} was not found`);
+    }
+
+    const locationStatuses = this.locationStatusService.getAllStatusesForPackage(
+      packageId,
+    );
+
+    console.log(
+      `[GET /packages/:id/locationStatuses] - Package ${packageId} location statuses found`,
+      locationStatuses,
+    );
+
+    return locationStatuses;
   }
 
   @ApiHeader({

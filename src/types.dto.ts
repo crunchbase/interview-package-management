@@ -28,8 +28,3 @@ export class CreateLocationStatusDto {
   address: LocationStatus['address'];
   status: LocationStatus['status'];
 }
-
-export class PackageWithTracking {
-  package: Package;
-  locationStatuses: LocationStatus[];
-}
