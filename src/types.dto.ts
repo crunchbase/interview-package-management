@@ -22,9 +22,15 @@ export class LocationStatus {
   id: number;
   address: string;
   status: LocationStatusEnum;
+  createdAt: string;
 }
 
 export class CreateLocationStatusDto {
   address: LocationStatus['address'];
   status: LocationStatus['status'];
+}
+
+export class PackageWithTracking {
+  package: Package;
+  tracking: LocationStatus[];
 }

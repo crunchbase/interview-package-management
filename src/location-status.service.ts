@@ -7,10 +7,11 @@ import {
 } from './types.dto';
 
 export class StoredLocationStatus {
-  id: number;
+  id: LocationStatus['id'];
   packageId: Package['id'];
   address: LocationStatus['address'];
   status: LocationStatus['status'];
+  timestamp: number;
 }
 
 const storedLocationStatuses: StoredLocationStatus[] = [
@@ -19,18 +20,21 @@ const storedLocationStatuses: StoredLocationStatus[] = [
     packageId: 123,
     address: '1 Package Dropoff Way, Oakland, CA, 11111',
     status: LocationStatusEnum.ARRIVED,
+    timestamp: 1617998101873,
   },
   {
     id: 1213,
     packageId: 123,
     address: '1 Package Dropoff Way, Oakland, CA, 11111',
     status: LocationStatusEnum.DEPARTED,
+    timestamp: 1618998101873,
   },
   {
     id: 1415,
     packageId: 123,
     address: '4 Midway Street, Columbus, OH, 44444',
     status: LocationStatusEnum.ARRIVED,
+    timestamp: 1619998101873,
   },
 ];
 
@@ -40,11 +44,12 @@ export class LocationStatusService {
     const statusesForPackages = storedLocationStatuses
       .filter(status => status.packageId === packageId)
       .map(storedLocationStatus => {
-        const { id, address, status } = storedLocationStatus;
+        const { id, address, status, timestamp } = storedLocationStatus;
         return {
           id,
           address,
           status,
+          createdAt: new Date(timestamp).toString(),
         };
       });
 
@@ -58,25 +63,28 @@ export class LocationStatusService {
     const { address, status } = createLocationStatusDto;
 
     if (!address) {
-      throw Error(
-        "Location status missing required field 'address'",
-      );
+      throw Error("Location status missing required field 'address'");
     }
 
     if (!status) {
-      throw Error(
-        "Location status missing required field 'status'",
-      );
+      throw Error("Location status missing required field 'status'");
     }
 
     const id = storedLocationStatuses.length;
-    const locationStatus = {
+    const timestamp = Date.now();
+
+    const locationStatus: LocationStatus = {
       id,
       address,
       status,
+      createdAt: new Date(timestamp).toString(),
     };
 
-    storedLocationStatuses.push({ ...locationStatus, packageId });
+    storedLocationStatuses.push({
+      ...locationStatus,
+      packageId,
+      timestamp,
+    });
 
     return locationStatus;
   }
