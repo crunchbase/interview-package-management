@@ -20,10 +20,17 @@ export class PackagesWithTrackingController {
   ) {}
 
   @Get(':id')
+  @ApiHeader({
+    name: 'X-Employee-Id',
+    description: 'Internal shipping employee id',
+  })
   getPackageWithTrackingById(
     @Param('id', ParseIntPipe) id: number,
+    @Headers() headers: Headers,
   ): PackageWithTracking {
-    const p = this.packageService.getById(id);
+    const employeeId = headers['x-employee-id'] || 'default';
+
+    const p = this.packageService.getById(employeeId, id);
 
     if (!p) {
       console.log(
@@ -50,18 +57,20 @@ export class PackagesWithTrackingController {
   }
 
   @ApiHeader({
-    name: 'X-Is-Employee',
-    description: 'Internal shipping employee header',
+    name: 'X-Employee-Id',
+    description: 'Internal shipping employee id',
   })
   @Get()
   getPackagesWithTracking(@Headers() headers: Headers): PackageWithTracking[] {
-    if (!headers['x-is-employee']) {
+    const employeeId = headers['x-employee-id'];
+
+    if (!employeeId) {
       console.log('ERROR [POST /packages/] - Unauthorized');
       throw new UnauthorizedException();
     }
 
     const packagesWithTracking: PackageWithTracking[] = this.packageService
-      .getAll()
+      .getAll(employeeId)
       .map(p => {
         const locationStatuses = this.locationStatusService.getAllStatusesForPackage(
           p.id,

@@ -28,8 +28,17 @@ export class PackagesController {
   ) {}
 
   @Get(':id')
-  getPackageById(@Param('id', ParseIntPipe) id: number): Package {
-    const p = this.packageService.getById(id);
+  @ApiHeader({
+    name: 'X-Employee-Id',
+    description: 'Internal shipping employee id',
+  })
+  getPackageById(
+    @Param('id', ParseIntPipe) id: number,
+    @Headers() headers: Headers,
+  ): Package {
+    const employeeId = headers['x-employee-id'] || 'default';
+
+    const p = this.packageService.getById(employeeId, id);
 
     if (!p) {
       console.log(
@@ -44,17 +53,19 @@ export class PackagesController {
   }
 
   @ApiHeader({
-    name: 'X-Is-Employee',
-    description: 'Internal shipping employee header',
+    name: 'X-Employee-Id',
+    description: 'Internal shipping employee id',
   })
   @Get()
   getPackages(@Headers() headers: Headers): Package[] {
-    if (!headers['x-is-employee']) {
+    const employeeId = headers['x-employee-id'];
+
+    if (!employeeId) {
       console.log('ERROR [POST /packages/] - Unauthorized');
       throw new UnauthorizedException();
     }
 
-    const packages = this.packageService.getAll();
+    const packages = this.packageService.getAll(employeeId);
 
     console.log(
       `[GET /packages] - ${packages.length} Packages found`,
@@ -65,22 +76,24 @@ export class PackagesController {
   }
 
   @ApiHeader({
-    name: 'X-Is-Employee',
-    description: 'Internal shipping employee header',
+    name: 'X-Employee-Id',
+    description: 'Internal shipping employee id',
   })
   @Post()
   createPackage(
     @Headers() headers: Headers,
     @Body() createPackageDto: CreatePackageDto,
   ): Package {
-    if (!headers['x-is-employee']) {
+    const employeeId = headers['x-employee-id'];
+
+    if (!employeeId) {
       console.log('ERROR [POST /packages/] - Unauthorized');
       throw new UnauthorizedException();
     }
 
     let pack: Package;
     try {
-      pack = this.packageService.create(createPackageDto);
+      pack = this.packageService.create(employeeId, createPackageDto);
     } catch (e) {
       console.log('ERROR [POST /packages/] - Create package error', e);
       throw new BadRequestException('Package missing required fields');
@@ -92,20 +105,22 @@ export class PackagesController {
   }
 
   @ApiHeader({
-    name: 'X-Is-Employee',
-    description: 'Internal shipping employee header',
+    name: 'X-Employee-Id',
+    description: 'Internal shipping employee id',
   })
   @Get(':id/locationStatuses')
   getLocationStatuses(
     @Headers() headers: Headers,
     @Param('id', ParseIntPipe) packageId: number,
   ): LocationStatus[] {
-    if (!headers['x-is-employee']) {
+    const employeeId = headers['x-employee-id'];
+
+    if (!employeeId) {
       console.log('ERROR [GET /packages/:id/locationStatuses] - Unauthorized');
       throw new UnauthorizedException();
     }
 
-    const pack = this.packageService.getById(packageId);
+    const pack = this.packageService.getById(employeeId, packageId);
 
     if (!pack) {
       console.log(
@@ -127,8 +142,8 @@ export class PackagesController {
   }
 
   @ApiHeader({
-    name: 'X-Is-Employee',
-    description: 'Internal shipping employee header',
+    name: 'X-Employee-Id',
+    description: 'Internal shipping employee id',
   })
   @Post(':id/locationStatuses')
   createLocationStatus(
@@ -136,12 +151,14 @@ export class PackagesController {
     @Headers() headers: Headers,
     @Param('id', ParseIntPipe) packageId: number,
   ): LocationStatus {
-    if (!headers['x-is-employee']) {
+    const employeeId = headers['x-employee-id'];
+
+    if (!employeeId) {
       console.log('ERROR [POST /packages/:id/locationStatuses] - Unauthorized');
       throw new UnauthorizedException();
     }
 
-    const pack = this.packageService.getById(packageId);
+    const pack = this.packageService.getById(employeeId, packageId);
 
     if (!pack) {
       console.log(
