@@ -27,7 +27,16 @@ const packages: { [employeeId: string]: Package[] } = {
 @Injectable()
 export class PackageService {
   public getAll(employeeId: string): Package[] {
-    return packages[employeeId] || [];
+    const packagesForEmployee = packages[employeeId];
+
+    // Ensure that users always have a set of default packages
+    if (!packagesForEmployee) {
+      packages[employeeId] = packages["default"].map(p =>
+        ({ ...p, id: this.getPackageId() })
+      )
+    }
+
+    return packages[employeeId];
   }
 
   public getById(employeeId: string, id: number): Package | undefined {
@@ -51,7 +60,7 @@ export class PackageService {
       throw Error("Package missing required field 'destination'");
     }
 
-    const id: Package['id'] = Math.floor(Math.random() * 1000);
+    const id: Package['id'] = this.getPackageId();
 
     // 'pack' here because 'package' is a reserved word
     const pack: Package = {
@@ -68,5 +77,9 @@ export class PackageService {
     packages[employeeId].push(pack);
 
     return pack;
+  }
+
+  private getPackageId(): Package['id'] {
+    return Math.floor(Math.random() * 10000);
   }
 }
